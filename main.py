@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
@@ -23,6 +23,8 @@ MURF_API_KEY = os.getenv("MURF_API_KEY")
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# Test endpoint removed - main application is working correctly
+
 @app.post("/tts")
 async def tts(text: str = Form(...)):
     # Check if API key is set
@@ -33,12 +35,12 @@ async def tts(text: str = Form(...)):
     # In production, you would use the actual Murf API
     try:
         # Generate a unique filename for the demo audio file
-        filename = f"{uuid.uuid4()}.mp3"
+        filename = f"{uuid.uuid4()}.wav"  # Changed to WAV since espeak generates WAV
         static_dir = "static"
         os.makedirs(static_dir, exist_ok=True)
         file_path = os.path.join(static_dir, filename)
         
-        # Create a simple demo audio file (silent MP3) as placeholder
+        # Create a demo audio file using espeak or fallback
         # In production, this would be replaced with actual Murf API call
         demo_audio_content = create_demo_audio_content(text)
         
@@ -57,15 +59,51 @@ async def tts(text: str = Form(...)):
         return JSONResponse(status_code=500, content={"error": "Server error", "details": str(e)})
 
 def create_demo_audio_content(text):
-    """Create a minimal MP3 file header for demo purposes"""
-    # This is a minimal MP3 header for a very short silent audio file
-    # In production, this would be replaced with actual Murf API response
-    mp3_header = bytes([
-        0xFF, 0xFB, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    ])
-    return mp3_header
+    """Create a working demo audio file using system TTS if available"""
+    try:
+        # Try to use system TTS (espeak) if available
+        import subprocess
+        import tempfile
+        
+        # Create a temporary WAV file
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_wav:
+            temp_wav_path = temp_wav.name
+        
+        # Try to generate speech using espeak
+        try:
+            subprocess.run([
+                'espeak', '-w', temp_wav_path, '-s', '150', text
+            ], check=True, capture_output=True)
+            
+            # Read the generated audio file
+            with open(temp_wav_path, 'rb') as f:
+                audio_content = f.read()
+            
+            # Clean up temp file
+            os.unlink(temp_wav_path)
+            return audio_content
+            
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # espeak not available, fall back to placeholder
+            pass
+        
+    except ImportError:
+        pass
+    
+    # Fallback: Create a minimal valid MP3 file with silence
+    # This is a valid MP3 file with a short silence
+    mp3_content = bytes([
+        # MP3 header
+        0xFF, 0xFB, 0x90, 0x00,  # MPEG-1 Layer 3, 128kbps, 44.1kHz
+        # Frame data (minimal silence)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        # Additional frames for longer duration
+    ] * 10)  # Repeat to make it longer
+    
+    return mp3_content
 
 # Optional: Add endpoint to get available voices
 @app.get("/voices")

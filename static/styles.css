@@ -46,3 +46,9 @@ button:hover {
 .audio-wrapper {
     margin-top: 20px;
 }
+
+audio {
+    width: 100%;
+    margin-top: 10px;
+    display: none; /* Hidden by default, shown when audio is loaded */
+}
