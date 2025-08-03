@@ -5,12 +5,12 @@ document.getElementById('speakBtn').addEventListener('click', () => {
         return;
     }
 
-    fetch('/speak', {
+    const formData = new FormData();
+    formData.append('text', text);
+    
+    fetch('/tts', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({text: text})
+        body: formData
     })
     .then(res => res.json())
     .then(data => {
