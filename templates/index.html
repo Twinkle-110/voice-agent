@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Voice Agents Project</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <h1>Voice Agents Project Setup</h1>
+        <p>This is a basic Flask setup for your Voice Agents project.</p>
+
+        <h2>Synthesize Speech</h2>
+        <textarea id="textInput" placeholder="Enter text to synthesize..."></textarea><br>
+        <button id="speakBtn">Speak</button>
+
+        <div class="audio-wrapper">
+            <audio id="audio" controls></audio>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
